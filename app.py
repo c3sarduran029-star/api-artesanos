@@ -1,74 +1,93 @@
+# app.py ACTUALIZADO
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from pymongo import MongoClient
 from datetime import datetime
-import os
 
 app = Flask(__name__)
-CORS(app) # Permite que tu PHP en IONOS hable con este Python
+CORS(app)
 
-# --- CONEXIÓN A LA NUBE (MONGODB ATLAS) ---
-# 1. Borra lo que hay entre comillas y pega TU connection string de Atlas.
-# 2. Asegúrate de cambiar <password> por tu contraseña real de la base de datos.
-uri = "mongodb+srv://c3sarduran029_db_user:B97iDf13F4DGsvdP@cluster0.jkkyfin.mongodb.net/?appName=Cluster0"
+# --- PEGA TU URI CON LA CONTRASEÑA CORRECTA AQUÍ ---
+uri = "mongodb+srv://c3sarduran029_db_user:TU_CONTRASEÑA@cluster0.jkkyfin.mongodb.net/?appName=Cluster0"
 
 try:
     client = MongoClient(uri)
-    db = client['artesanos_db']       # Nombre de tu base de datos en Mongo
-    coleccion = db['detalles_producto'] # Nombre de la colección
+    db = client['artesanos_db']
+    coleccion = db['detalles_producto']
     print("✅ Conexión a MongoDB exitosa")
 except Exception as e:
     print("❌ Error conectando a MongoDB:", e)
 
 @app.route('/', methods=['GET'])
 def inicio():
-    return jsonify({"mensaje": "API NoSQL Artesanos funcionando en la nube ☁️"})
+    return jsonify({"mensaje": "API NoSQL Artesanos V2 (Con Edición y Borrado) 🚀"})
 
-# --- GUARDAR DETALLES (POST) ---
-@app.route('/api/detalles', methods=['POST'])
-def guardar_detalles():
-    datos = request.json
-    if not datos:
-        return jsonify({"error": "No se recibieron datos"}), 400
-
-    nuevo_detalle = {
-        "id_producto_mysql": datos.get('id_producto_mysql'),
-        "historia": datos.get('historia', ''),
-        "tecnica": datos.get('tecnica', ''),
-        "materiales": datos.get('materiales', ''),
-        "fecha_creacion": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    }
-    
-    coleccion.insert_one(nuevo_detalle)
-    return jsonify({"mensaje": "Guardado correctamente", "status": "ok"})
-
-# --- OBTENER DETALLES (GET) ---
+# 1. LEER (GET)
 @app.route('/api/detalles/<id_mysql>', methods=['GET'])
 def obtener_detalles(id_mysql):
-    # Buscamos por el ID que viene de MySQL
     try:
-        id_numero = int(id_mysql)
-        detalle = coleccion.find_one({"id_producto_mysql": id_numero}, {"_id": 0})
+        # Intentar buscar como entero, si falla, como string
+        id_busqueda = int(id_mysql)
     except:
-        detalle = None
+        id_busqueda = id_mysql
 
-    # 2. Si no aparece, lo buscamos como TEXTO (String) - Por si acaso
-    if not detalle:
-        detalle = coleccion.find_one({"id_producto_mysql": id_mysql}, {"_id": 0})
+    detalle = coleccion.find_one({"id_producto_mysql": id_busqueda}, {"_id": 0})
     
+    if not detalle:
+        # Intento secundario (por si se guardó como string)
+        detalle = coleccion.find_one({"id_producto_mysql": str(id_mysql)}, {"_id": 0})
+
     if detalle:
         return jsonify(detalle)
     else:
-        # Si no existe, devolvemos vacíos para que no falle el HTML
         return jsonify({
-            "historia": "Este producto aún no tiene historia detallada.",
-            "tecnica": "Información no disponible.",
-            "materiales": "Información no disponible."
+            "historia": "", "tecnica": "", "materiales": "", "tags": []
         })
 
+# 2. CREAR O ACTUALIZAR (POST / PUT) - "UPSERT"
+@app.route('/api/detalles/guardar', methods=['POST'])
+def guardar_o_actualizar():
+    datos = request.json
+    if not datos or 'id_producto_mysql' not in datos:
+        return jsonify({"error": "Datos incompletos"}), 400
+
+    id_mysql = datos['id_producto_mysql']
+    
+    # Datos a guardar
+    datos_actualizados = {
+        "historia": datos.get('historia', ''),
+        "tecnica": datos.get('tecnica', ''),
+        "materiales": datos.get('materiales', ''),
+        "tags": datos.get('tags', []),
+        "ultima_actualizacion": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+    # Intentamos convertir ID a entero para consistencia
+    try:
+        id_query = int(id_mysql)
+    except:
+        id_query = id_mysql
+
+    # La magia de Mongo: update_one con upsert=True
+    # Si existe, lo actualiza. Si no existe, lo crea.
+    coleccion.update_one(
+        {"id_producto_mysql": id_query},
+        {"$set": datos_actualizados},
+        upsert=True
+    )
+    
+    return jsonify({"mensaje": "Datos actualizados en NoSQL", "status": "ok"})
+
+# 3. ELIMINAR (DELETE)
+@app.route('/api/detalles/eliminar/<id_mysql>', methods=['DELETE'])
+def eliminar_detalles(id_mysql):
+    try:
+        id_query = int(id_mysql)
+    except:
+        id_query = id_mysql
+        
+    coleccion.delete_one({"id_producto_mysql": id_query})
+    return jsonify({"mensaje": "Eliminado de NoSQL", "status": "ok"})
+
 if __name__ == '__main__':
-    # Esto permite correrlo en tu PC para probar si quieres
-
     app.run(debug=True, port=5000)
-
-
