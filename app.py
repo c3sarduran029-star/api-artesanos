@@ -10,7 +10,7 @@ CORS(app) # Permite que tu PHP en IONOS hable con este Python
 # --- CONEXIÓN A LA NUBE (MONGODB ATLAS) ---
 # 1. Borra lo que hay entre comillas y pega TU connection string de Atlas.
 # 2. Asegúrate de cambiar <password> por tu contraseña real de la base de datos.
-uri = "mongodb+srv://c3sarduran029_db_user:<db_password>@cluster0.jkkyfin.mongodb.net/?appName=Cluster0"
+uri = "mongodb+srv://c3sarduran029_db_user:<B97iDf13F4DGsvdP>@cluster0.jkkyfin.mongodb.net/?appName=Cluster0"
 
 try:
     client = MongoClient(uri)
@@ -60,4 +60,5 @@ def obtener_detalles(id_mysql):
 
 if __name__ == '__main__':
     # Esto permite correrlo en tu PC para probar si quieres
+
     app.run(debug=True, port=5000)
