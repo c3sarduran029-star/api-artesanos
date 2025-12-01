@@ -46,7 +46,15 @@ def guardar_detalles():
 @app.route('/api/detalles/<id_mysql>', methods=['GET'])
 def obtener_detalles(id_mysql):
     # Buscamos por el ID que viene de MySQL
-    detalle = coleccion.find_one({"id_producto_mysql": id_mysql}, {"_id": 0})
+    try:
+        id_numero = int(id_mysql)
+        detalle = coleccion.find_one({"id_producto_mysql": id_numero}, {"_id": 0})
+    except:
+        detalle = None
+
+    # 2. Si no aparece, lo buscamos como TEXTO (String) - Por si acaso
+    if not detalle:
+        detalle = coleccion.find_one({"id_producto_mysql": id_mysql}, {"_id": 0})
     
     if detalle:
         return jsonify(detalle)
@@ -62,4 +70,5 @@ if __name__ == '__main__':
     # Esto permite correrlo en tu PC para probar si quieres
 
     app.run(debug=True, port=5000)
+
 
