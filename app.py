@@ -8,7 +8,7 @@ app = Flask(__name__)
 CORS(app)
 
 # --- PEGA TU URI CON LA CONTRASEÑA CORRECTA AQUÍ ---
-uri = "mongodb+srv://c3sarduran029_db_user:TU_CONTRASEÑA@cluster0.jkkyfin.mongodb.net/?appName=Cluster0"
+uri = "mongodb+srv://c3sarduran029_db_user:B97iDf13F4DGsvdP@cluster0.jkkyfin.mongodb.net/?appName=Cluster0"
 
 try:
     client = MongoClient(uri)
@@ -91,3 +91,4 @@ def eliminar_detalles(id_mysql):
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
+
